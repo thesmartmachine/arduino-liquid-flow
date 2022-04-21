@@ -33,9 +33,27 @@
   */
 
 #include "sensirion-lf.h"
+#include "driver/ledc.h"
 
 // delay between measurements
 #define MEASURE_DELAY 100
+
+const int PWM_PIN0 = 13;
+const int PWM_PIN1 = 14; 
+
+const int BOOT_FREQ = 10;
+
+const int CHANNEL0 = 0; 
+const int CHANNEL1 = 1;
+
+const int PWM_RES = 8; 
+const int PWM_DUTY = 127;
+
+int COUNT0 = 0;
+int COUNT1 = 0;
+
+int FREQ0 = 0; 
+int FREQ1 = 0;
 
 // Create first SLF3X.
 const uint8_t SDA_ZERO = 21;
@@ -61,19 +79,29 @@ void setup() {
   Serial.begin(115200); // initialize serial communication
 
   if (SLF3X_I2C_ZERO.init() != 0) {
-    Serial.println("Error during SLF3X_0 init. Stopping application.");
-    while (1) { delay(1000); } // loop forever
+    Serial.println("Error during SLF3X_0 init. Power Cycling ESP32");
+    ESP.restart();
   }
 
   if (SLF3X_I2C_ONE.init() != 0) {
     Serial.println("Error during SLF3X_1 init. Stopping application.");
-    while (1) { delay(1000); } // loop forever
+    ESP.restart();
   }
+
+  ledcSetup(CHANNEL0, BOOT_FREQ, PWM_RES);
+  ledcSetup(CHANNEL1, BOOT_FREQ, PWM_RES);
+
+  ledcAttachPin(PWM_PIN0, CHANNEL0);
+  ledcAttachPin(PWM_PIN1, CHANNEL1);
+
+  ledcWrite(CHANNEL0, PWM_DUTY);
+  ledcWrite(CHANNEL1, PWM_DUTY);
 }
 
 void loop() {
-  int ret = SLF3X_I2C_ZERO.readSample();
-  if (ret == 0) {
+  int I2C_RET0 = SLF3X_I2C_ZERO.readSample();
+  if (I2C_RET0 == 0) {
+    COUNT0 = 0;
     Serial.print("Flow: ");
     Serial.print(SLF3X_I2C_ZERO.getFlow(), 2);
     Serial.print(" ml/min");
@@ -83,11 +111,16 @@ void loop() {
     Serial.print(" deg C\n");
   } else {
     Serial.print("Error in SLF3X_0.readSample(): ");
-    Serial.println(ret);
+    Serial.println();
+    COUNT0++ 
+    if (COUNT0 > 9) {
+      ESP.restart();
+    }
   }
 
-  ret = SLF3X_I2C_ONE.readSample();
-  if (ret == 0) {
+  int I2C_RET1 = SLF3X_I2C_ONE.readSample();
+  if (I2C_RET1 == 0) {
+    COUNT1 = 0;
     Serial.print("Flow: ");
     Serial.print(SLF3X_I2C_ONE.getFlow(), 2);
     Serial.print(" ml/min");
@@ -97,7 +130,11 @@ void loop() {
     Serial.print(" deg C\n");
   } else {
     Serial.print("Error in SLF3X_1.readSample(): ");
-    Serial.println(ret);
+    Serial.println();
+    COUNT1++
+    if (COUNT1 > 9) {
+      ESP.restart();
+    }
   }
 
   delay(MEASURE_DELAY); // delay between reads
