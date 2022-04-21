@@ -57,9 +57,9 @@ public:
   bool isAirInLineDetected() const { return mAirInLineDetected; }
   bool isHighFlowDetected()  const { return mHighFlowDetected;  }
 
-  static const float SLF3X_SCALE_FACTOR_FLOW = 500.0;
-  static const float SLF3X_SCALE_FACTOR_TEMP = 200.0;
-  static const uint8_t SLF3X_I2C_ADDRESS = 0x08;
+  static constexpr float SLF3X_SCALE_FACTOR_FLOW = 500.0;
+  static constexpr float SLF3X_SCALE_FACTOR_TEMP = 200.0;
+  static constexpr uint8_t SLF3X_I2C_ADDRESS = 0x08;
 
 private:
   uint8_t crc8(const uint8_t* data, uint8_t len);
