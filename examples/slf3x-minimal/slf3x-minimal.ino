@@ -37,27 +37,70 @@
 // delay between measurements
 #define MEASURE_DELAY 100
 
+// Create first SLF3X.
+const uint8_t ZERO_I2C_BUS = 0;
+const uint8_t SDA_ZERO = 21;
+const uint8_t SCL_ZERO = 22;
+SensirionLF SLF3X_I2C_ZERO(
+  SensirionLF::SLF3X_SCALE_FACTOR_FLOW,
+  SensirionLF::SLF3X_SCALE_FACTOR_TEMP,
+  ZERO_I2C_BUS,
+  SensirionLF::SLF3X_I2C_BUS,
+  SCL_ZERO,
+  SDA_ZERO);
+
+// Create second SLF3X.
+const uint8_t ONE_I2C_BUS = 0;
+const uint8_t SDA_ONE = 26;
+const uint8_t SCL_ONE = 25;
+SensirionLF SLF3X_I2C_ONE(
+  SensirionLF::SLF3X_SCALE_FACTOR_FLOW,
+  SensirionLF::SLF3X_SCALE_FACTOR_TEMP,
+  ONE_I2C_BUS,
+  SensirionLF::SLF3X_I2C_BUS,
+  SCL_ONE,
+  SDA_ONE);
+
 void setup() {
   Serial.begin(115200); // initialize serial communication
 
-  if (SLF3X.init() != 0) {
-    Serial.println("Error during SLF3X init. Stopping application.");
+  if (SLF3X_I2C_ZERO.init() != 0) {
+    Serial.println("Error during SLF3X_0 init. Stopping application.");
+    while (1) { delay(1000); } // loop forever
+  }
+
+  if (SLF3X_I2C_ONE.init() != 0) {
+    Serial.println("Error during SLF3X_1 init. Stopping application.");
     while (1) { delay(1000); } // loop forever
   }
 }
 
 void loop() {
-  int ret = SLF3X.readSample();
+  int ret = SLF3X_I2C_ZERO.readSample();
   if (ret == 0) {
     Serial.print("Flow: ");
-    Serial.print(SLF3X.getFlow(), 2);
+    Serial.print(SLF3X_I2C_ZERO.getFlow(), 2);
     Serial.print(" ml/min");
 
     Serial.print(" | Temp: ");
-    Serial.print(SLF3X.getTemp(), 1);
+    Serial.print(SLF3X_I2C_ZERO.getTemp(), 1);
     Serial.print(" deg C\n");
   } else {
-    Serial.print("Error in SLF3X.readSample(): ");
+    Serial.print("Error in SLF3X_0.readSample(): ");
+    Serial.println(ret);
+  }
+
+  int ret = SLF3X_I2C_ONE.readSample();
+  if (ret == 0) {
+    Serial.print("Flow: ");
+    Serial.print(SLF3X_I2C_ONE.getFlow(), 2);
+    Serial.print(" ml/min");
+
+    Serial.print(" | Temp: ");
+    Serial.print(SLF3X_I2C_ONE.getTemp(), 1);
+    Serial.print(" deg C\n");
+  } else {
+    Serial.print("Error in SLF3X_1.readSample(): ");
     Serial.println(ret);
   }
 

@@ -35,10 +35,18 @@
 #ifndef SENSIRION_LF_H
 #define SENSIRION_LF_H
 
+#include <Wire.h>
+
 class SensirionLF
 {
 public:
-  SensirionLF(float flowScaleFactor, float tempScaleFactor, uint8_t i2cAddress);
+  SensirionLF(
+    float flowScaleFactor, 
+    float tempScaleFactor, 
+    uint8_t i2cBus, 
+    uint8_t i2cAddress,
+    uint8_t clockPin,
+    uint8_t dataPin);
 
   int8_t init();
   int8_t readSample();
@@ -48,6 +56,10 @@ public:
 
   bool isAirInLineDetected() const { return mAirInLineDetected; }
   bool isHighFlowDetected()  const { return mHighFlowDetected;  }
+
+  static const float SLF3X_SCALE_FACTOR_FLOW = 500.0;
+  static const float SLF3X_SCALE_FACTOR_TEMP = 200.0;
+  static const uint8_t SLF3X_I2C_ADDRESS = 0x08;
 
 private:
   uint8_t crc8(const uint8_t* data, uint8_t len);
@@ -63,7 +75,11 @@ private:
 
   float   mFlowScaleFactor;
   float   mTempScaleFactor;
+  uint8_t mI2cBus;
   uint8_t mI2cAddress;
+  TwoWire mI2c;
+  uint8_t mClockPin;
+  uint8_t mDataPin;
 
   float   mFlow;
   float   mTemp;
@@ -71,8 +87,6 @@ private:
   bool mAirInLineDetected;
   bool mHighFlowDetected;
 };
-
-extern SensirionLF SLF3X;
 
 // TODO: verify with LD20 hardware
 // extern SensirionLF LD20;

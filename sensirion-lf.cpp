@@ -35,12 +35,9 @@
 // Adapted from https://github.com/Sensirion/arduino-liquid-flow-snippets/blob/master/example_00_measurement_LD20/example_00_measurement_LD20.ino
 
 #include <Arduino.h>
-#include <Wire.h>
 #include "sensirion-lf.h"
 
-static const float   SLF3X_SCALE_FACTOR_FLOW = 500.0;
-static const float   SLF3X_SCALE_FACTOR_TEMP = 200.0;
-static const uint8_t SLF3X_I2C_ADDRESS = 0x08;
+
 
 // TODO: verify on LD20 hardware
 // static const float   LD20_SCALE_FACTOR_FLOW = 1200.0;
@@ -63,10 +60,17 @@ static const uint8_t  INITIAL_MEASURE_DELAY = 120; // LD20: 120ms; SLF3X: 50ms
 
 SensirionLF::SensirionLF(float flowScaleFactor,
                          float tempScaleFactor,
-                         uint8_t i2cAddress)
+                         uint8_t i2cBus,
+                         uint8_t i2cAddress,
+                         uint8_t clockPin,
+                         uint8_t dataPin);
     : mFlowScaleFactor(flowScaleFactor),
       mTempScaleFactor(tempScaleFactor),
+      mI2cBus(i2cBus),
       mI2cAddress(i2cAddress),
+      mI2c(mI2cBus),
+      mClockPin(clockPin),
+      mDataPin(dataPin),
       mAirInLineDetected(false),
       mHighFlowDetected(false)
 {
@@ -74,7 +78,8 @@ SensirionLF::SensirionLF(float flowScaleFactor,
 
 int8_t SensirionLF::init()
 {
-  Wire.begin();
+  mI2c.begin(mDataPin, mClockPin);
+  
   if (trigger_soft_reset() != 0) {
     return 1;
   }
@@ -173,33 +178,29 @@ uint8_t SensirionLF::crc8(const uint8_t* data, uint8_t len)
 
 int8_t SensirionLF::i2c_read(uint8_t addr, uint8_t* data, uint16_t count)
 {
-    Wire.requestFrom(addr, count);
-    if (Wire.available() != count) {
+    mI2c.requestFrom(addr, count);
+    if (mI2c.available() != count) {
         return -1;
     }
     for (int i = 0; i < count; ++i) {
-        data[i] = Wire.read();
+        data[i] = mI2c.read();
     }
     return 0;
 }
 
 int8_t SensirionLF::i2c_write(uint8_t addr, const uint8_t* data, uint16_t count)
 {
-    Wire.beginTransmission(addr);
+    mI2c.beginTransmission(addr);
     for (int i = 0; i < count; ++i) {
-        if (Wire.write(data[i]) != 1) {
+        if (mI2c.write(data[i]) != 1) {
             return false;
         }
     }
-    if (Wire.endTransmission() != 0) {
+    if (mI2c.endTransmission() != 0) {
         return -1;
     }
     return 0;
 }
-
-SensirionLF SLF3X(SLF3X_SCALE_FACTOR_FLOW,
-                  SLF3X_SCALE_FACTOR_TEMP,
-                  SLF3X_I2C_ADDRESS);
 
 // TODO: verify with LD20 hardware
 // SensirionLF LD20(LD20_SCALE_FACTOR_FLOW, LD20_SCALE_FACTOR_TEMP, LD20_I2C_ADDRESS);
