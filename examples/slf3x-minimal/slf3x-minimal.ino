@@ -34,6 +34,7 @@
 
 #include "sensirion-lf.h"
 #include "driver/ledc.h"
+#include <math.h>
 
 // delay between measurements
 #define MEASURE_DELAY 100
@@ -102,6 +103,10 @@ void loop() {
   int I2C_RET0 = SLF3X_I2C_ZERO.readSample();
   if (I2C_RET0 == 0) {
     COUNT0 = 0;
+
+    FREQ0 = round(1000/60 * SLF3X_I2C_ZERO.getFlow())
+    ledcWriteTone(CHANNEL0, FREQ0);
+
     Serial.print("Flow: ");
     Serial.print(SLF3X_I2C_ZERO.getFlow(), 2);
     Serial.print(" ml/min");
@@ -121,6 +126,10 @@ void loop() {
   int I2C_RET1 = SLF3X_I2C_ONE.readSample();
   if (I2C_RET1 == 0) {
     COUNT1 = 0;
+
+    FREQ1 = round(1000/60 * SLF3X_I2C_ONE.getFlow())
+    ledcWriteTone(CHANNEL0, FREQ0);
+
     Serial.print("Flow: ");
     Serial.print(SLF3X_I2C_ONE.getFlow(), 2);
     Serial.print(" ml/min");
