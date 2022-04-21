@@ -90,7 +90,7 @@ void loop() {
     Serial.println(ret);
   }
 
-  int ret = SLF3X_I2C_ONE.readSample();
+  ret = SLF3X_I2C_ONE.readSample();
   if (ret == 0) {
     Serial.print("Flow: ");
     Serial.print(SLF3X_I2C_ONE.getFlow(), 2);
