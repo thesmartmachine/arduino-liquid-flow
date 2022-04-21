@@ -38,25 +38,21 @@
 #define MEASURE_DELAY 100
 
 // Create first SLF3X.
-const uint8_t ZERO_I2C_BUS = 0;
 const uint8_t SDA_ZERO = 21;
 const uint8_t SCL_ZERO = 22;
 SensirionLF SLF3X_I2C_ZERO(
   SensirionLF::SLF3X_SCALE_FACTOR_FLOW,
   SensirionLF::SLF3X_SCALE_FACTOR_TEMP,
-  ZERO_I2C_BUS,
   SensirionLF::SLF3X_I2C_ADDRESS,
   SCL_ZERO,
   SDA_ZERO);
 
 // Create second SLF3X.
-const uint8_t ONE_I2C_BUS = 0;
 const uint8_t SDA_ONE = 26;
 const uint8_t SCL_ONE = 25;
 SensirionLF SLF3X_I2C_ONE(
   SensirionLF::SLF3X_SCALE_FACTOR_FLOW,
   SensirionLF::SLF3X_SCALE_FACTOR_TEMP,
-  ONE_I2C_BUS,
   SensirionLF::SLF3X_I2C_ADDRESS,
   SCL_ONE,
   SDA_ONE);
