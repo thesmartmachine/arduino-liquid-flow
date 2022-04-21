@@ -60,15 +60,13 @@ static const uint8_t  INITIAL_MEASURE_DELAY = 120; // LD20: 120ms; SLF3X: 50ms
 
 SensirionLF::SensirionLF(float flowScaleFactor,
                          float tempScaleFactor,
-                         uint8_t i2cBus,
                          uint8_t i2cAddress,
                          uint8_t clockPin,
                          uint8_t dataPin)
     : mFlowScaleFactor(flowScaleFactor),
       mTempScaleFactor(tempScaleFactor),
-      mI2cBus(i2cBus),
       mI2cAddress(i2cAddress),
-      mI2c(mI2cBus),
+      mI2c(),
       mClockPin(clockPin),
       mDataPin(dataPin),
       mAirInLineDetected(false),

@@ -41,9 +41,8 @@ class SensirionLF
 {
 public:
   SensirionLF(
-    float flowScaleFactor, 
-    float tempScaleFactor, 
-    uint8_t i2cBus, 
+    float flowScaleFactor,
+    float tempScaleFactor,
     uint8_t i2cAddress,
     uint8_t clockPin,
     uint8_t dataPin);
@@ -75,7 +74,6 @@ private:
 
   float   mFlowScaleFactor;
   float   mTempScaleFactor;
-  uint8_t mI2cBus;
   uint8_t mI2cAddress;
   TwoWire mI2c;
   uint8_t mClockPin;
