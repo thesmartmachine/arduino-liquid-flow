@@ -37,8 +37,6 @@
 #include <Arduino.h>
 #include "sensirion-lf.h"
 
-
-
 // TODO: verify on LD20 hardware
 // static const float   LD20_SCALE_FACTOR_FLOW = 1200.0;
 // static const float   LD20_SCALE_FACTOR_TEMP = 200.0;
@@ -61,12 +59,13 @@ static const uint8_t  INITIAL_MEASURE_DELAY = 120; // LD20: 120ms; SLF3X: 50ms
 SensirionLF::SensirionLF(float flowScaleFactor,
                          float tempScaleFactor,
                          uint8_t i2cAddress,
+                         uint8_t i2cBusIndex,
                          uint8_t clockPin,
                          uint8_t dataPin)
     : mFlowScaleFactor(flowScaleFactor),
       mTempScaleFactor(tempScaleFactor),
       mI2cAddress(i2cAddress),
-      mI2c(),
+      mI2c(i2cBusIndex),
       mClockPin(clockPin),
       mDataPin(dataPin),
       mAirInLineDetected(false),

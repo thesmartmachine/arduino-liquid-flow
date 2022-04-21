@@ -44,6 +44,7 @@ public:
     float flowScaleFactor,
     float tempScaleFactor,
     uint8_t i2cAddress,
+    uint8_t i2cBusIndex,
     uint8_t clockPin,
     uint8_t dataPin);
 
