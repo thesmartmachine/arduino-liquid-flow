@@ -63,7 +63,7 @@ SensirionLF::SensirionLF(float flowScaleFactor,
                          uint8_t i2cBus,
                          uint8_t i2cAddress,
                          uint8_t clockPin,
-                         uint8_t dataPin);
+                         uint8_t dataPin)
     : mFlowScaleFactor(flowScaleFactor),
       mTempScaleFactor(tempScaleFactor),
       mI2cBus(i2cBus),
