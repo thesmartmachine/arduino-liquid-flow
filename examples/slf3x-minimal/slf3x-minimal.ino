@@ -44,8 +44,6 @@ const int PWM_PIN1 = 12;
 
 const bool DEBUG = true;     //SET Debug mode on = true, debug mode off = false, this will affect whether flow sensor error messages affect PWM output frequency
 
-const int BOOT_FREQ = 10;
-
 const int CHANNEL0 = 0; 
 const int CHANNEL1 = 2;   //Channel 0, 1, share a PWM timer, to make PWM0,PWM1 frequency outputs independent must use separate timer.
 
@@ -57,8 +55,11 @@ int COUNT1 = 0;
 
 const int TIMEOUT = 10;   //Number of allowable failed communcation attempts on I2C before power cycle will occur. 
 
-int FREQ0 = 0;          
-int FREQ1 = 0;
+int FREQ0 = 10;          
+int FREQ1 = 10;
+
+int MIN_FREQ = 10; 
+int MAX_FREQ = 10000;
 
 // Create first SLF3X.
 const uint8_t SDA_ZERO = 21;
@@ -107,8 +108,8 @@ void setup() {
     ESP.restart();
   }
 
-  ledcSetup(CHANNEL0, BOOT_FREQ, PWM_RES);
-  ledcSetup(CHANNEL1, BOOT_FREQ, PWM_RES);
+  ledcSetup(CHANNEL0, MIN_FREQ, PWM_RES);
+  ledcSetup(CHANNEL1, MIN_FREQ, PWM_RES);
 
   ledcAttachPin(PWM_PIN0, CHANNEL0);
   ledcAttachPin(PWM_PIN1, CHANNEL1);
@@ -119,6 +120,7 @@ void setup() {
 
 void loop()
 {
+  
   if (millis() > flow_sense_time + flow_sense_time_interval)
   {
     // Update rate liquid flow value and High Flow flag @ 1000Hz
@@ -154,96 +156,10 @@ void loop()
   }
 
   // Set PWM outputs
-  ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_0, FREQ0);
-  ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_1, FREQ1);
-
+  ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_0, constrain(FREQ0, MIN_FREQ, MAX_FREQ));
+  ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_1, constrain(FREQ1, MIN_FREQ, MAX_FREQ));
+  
   Serial.print(FREQ0);
   Serial.print(",");
   Serial.println(FREQ1);
-
-  /*
-    int I2C_RET0 = SLF3X_I2C_ZERO.readSample();
-    if (I2C_RET0 == 0) {
-      COUNT0 = 0;
-
-      FREQ0 = round(10000/60 * SLF3X_I2C_ZERO.getFlow());
-
-      if (FREQ0 < 5) {
-        FREQ0 = 5;
-        Serial.print("FLOW0 LOW");
-      }
-
-      if (!DEBUG) {
-        if (SLF3X_I2C_ZERO.isAirInLineDetected()){
-          FREQ0 = 2000;
-          Serial.print(" [ ERROR : AIR IN LINE 0 ] ");
-        }
-        if (SLF3X_I2C_ZERO.isHighFlowDetected()) {
-          FREQ0 = 10000;
-          Serial.print(" [ ERROR : HIGH FLOW IN LINE 0 ] ");
-        }
-      }
-
-
-      //ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_0, FREQ0);
-
-
-      Serial.print("Flow 0: ");
-      Serial.print(SLF3X_I2C_ZERO.getFlow(), 2);
-      Serial.print(" ml/min");
-
-      Serial.print(" | Temp 0: ");
-      Serial.print(SLF3X_I2C_ZERO.getTemp(), 1);
-      Serial.print(" deg C  |  FREQ0: ");
-      Serial.print(FREQ0);
-    } else {
-      Serial.print("Error in SLF3X_0.readSample(): ");
-      COUNT0++;
-      if (COUNT0 > 9) {
-        ESP.restart();
-      }
-    }
-
-    int I2C_RET1 = SLF3X_I2C_ONE.readSample();
-    if (I2C_RET1 == 0) {
-      COUNT1 = 0;
-
-      FREQ1 = round(10000/60 * SLF3X_I2C_ONE.getFlow());
-
-      if (FREQ1 < 5) {
-        FREQ1 = 5;
-        Serial.print("FLOW1 LOW");
-      }
-
-      if (!DEBUG) {
-        if (SLF3X_I2C_ONE.isAirInLineDetected()){
-          FREQ1 = 2000;
-          Serial.print(" [ ERROR : AIR IN LINE 1 ] ");
-        }
-        if (SLF3X_I2C_ONE.isHighFlowDetected()) {
-          FREQ1 = 10000;
-          Serial.print(" [ ERROR : HIGH FLOW IN LINE 1 ] ");
-        }
-      }
-
-      //ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_1, FREQ1);
-
-      Serial.print("   Flow 1: ");
-      Serial.print(SLF3X_I2C_ONE.getFlow(), 2);
-      Serial.print(" ml/min");
-
-      Serial.print(" | Temp 1: ");
-      Serial.print(SLF3X_I2C_ONE.getTemp(), 1);
-      Serial.print(" deg C  |  FREQ 1: ");
-      Serial.println(FREQ1);
-    } else {
-      Serial.print("Error in SLF3X_1.readSample(): ");
-      Serial.println();
-      COUNT1++;
-      if (COUNT1 > 9) {
-        ESP.restart();
-      }
-    }
-
-    delay(MEASURE_DELAY); // delay between reads */
 }
