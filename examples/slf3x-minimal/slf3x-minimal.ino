@@ -86,16 +86,24 @@ SensirionLF SLF3X_I2C_ONE(
   SCL_ONE,
   SDA_ONE);
 
+//SEQUENCER
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//Update rate liquid flow value and High Flow flag @ 1000Hz
+#define flow_sense_time_interval 1 //Time in ms
+unsigned long flow_sense_time = 0;
+bool no_air_in_line_0 = false;
+
+//Update rate temperature value and Air-in-Line flag @ 80Hz
+#define air_in_line_interval 13 //Time in ms
+unsigned long air_in_line_time = 0;
+bool no_air_in_line_1 = false;
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
 void setup() {
   Serial.begin(115200); // initialize serial communication
 
-  if (SLF3X_I2C_ZERO.init() != 0) {
-    Serial.println("Error during SLF3X_0 init. Power Cycling ESP32");
-    ESP.restart();
-  }
-
-  if (SLF3X_I2C_ONE.init() != 0) {
-    Serial.println("Error during SLF3X_1 init. Stopping application.");
+  if ((SLF3X_I2C_ZERO.init() != 0) || (SLF3X_I2C_ONE.init() != 0)) {
+    Serial.println("SLF3X_0 or SLF3X_1 not initialised. Power Cycling ESP32");
     ESP.restart();
   }
 
@@ -109,89 +117,133 @@ void setup() {
   ledcWrite(CHANNEL1, PWM_DUTY);
 }
 
-void loop() {
-  int I2C_RET0 = SLF3X_I2C_ZERO.readSample();
-  if (I2C_RET0 == 0) {
-    COUNT0 = 0;
+void loop()
+{
+  if (millis() > flow_sense_time + flow_sense_time_interval)
+  {
+    // Update rate liquid flow value and High Flow flag @ 1000Hz
+    if (no_air_in_line_0) {
+      if (SLF3X_I2C_ZERO.readSample() == 0) FREQ0 = round(10000 / 60 * SLF3X_I2C_ZERO.getFlow());
+      if (SLF3X_I2C_ZERO.isHighFlowDetected()) FREQ0 = 10000; }
 
-    FREQ0 = round(10000/60 * SLF3X_I2C_ZERO.getFlow());
+    if (no_air_in_line_1) {
+      if (SLF3X_I2C_ONE.readSample() == 0) FREQ1 = round(10000 / 60 * SLF3X_I2C_ONE.getFlow());
+      if (SLF3X_I2C_ONE.isHighFlowDetected()) FREQ1 = 10000; }
 
-    if (FREQ0 < 5) {
-      FREQ0 = 5;
-      Serial.print("FLOW0 LOW");
-    }
-
-    if (!DEBUG) {
-      if (SLF3X_I2C_ZERO.isAirInLineDetected()){
-        FREQ0 = 2000;
-        Serial.print(" [ ERROR : AIR IN LINE 0 ] ");
-      }
-      if (SLF3X_I2C_ZERO.isHighFlowDetected()) {
-        FREQ0 = 10000;
-        Serial.print(" [ ERROR : HIGH FLOW IN LINE 0 ] ");
-      }
-    }
-
-    
-    ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_0, FREQ0);
-
-
-    Serial.print("Flow 0: ");
-    Serial.print(SLF3X_I2C_ZERO.getFlow(), 2);
-    Serial.print(" ml/min");
-
-    Serial.print(" | Temp 0: ");
-    Serial.print(SLF3X_I2C_ZERO.getTemp(), 1);
-    Serial.print(" deg C  |  FREQ0: ");
-    Serial.print(FREQ0);
-  } else {
-    Serial.print("Error in SLF3X_0.readSample(): ");
-    COUNT0++; 
-    if (COUNT0 > 9) {
-      ESP.restart();
-    }
+    flow_sense_time = millis();
   }
 
-  int I2C_RET1 = SLF3X_I2C_ONE.readSample();
-  if (I2C_RET1 == 0) {
-    COUNT1 = 0;
-
-    FREQ1 = round(10000/60 * SLF3X_I2C_ONE.getFlow());
-
-    if (FREQ1 < 5) {
-      FREQ1 = 5;  
-      Serial.print("FLOW1 LOW");
-    } 
-    
-    if (!DEBUG) {
-      if (SLF3X_I2C_ONE.isAirInLineDetected()){
-        FREQ1 = 2000;
-        Serial.print(" [ ERROR : AIR IN LINE 1 ] ");
-      }
-      if (SLF3X_I2C_ONE.isHighFlowDetected()) {
-        FREQ1 = 10000;
-        Serial.print(" [ ERROR : HIGH FLOW IN LINE 1 ] ");
-      }
+  if (millis() > air_in_line_time + air_in_line_interval)
+  {
+    // Update rate temperature value and Air-in-Line flag @ 80Hz
+    if (SLF3X_I2C_ZERO.isAirInLineDetected()) {
+      no_air_in_line_0 = false;
+      FREQ0 = 2000;
+    } else {
+      no_air_in_line_0 = true;
     }
-    
-    ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_1, FREQ1);
 
-    Serial.print("   Flow 1: ");
-    Serial.print(SLF3X_I2C_ONE.getFlow(), 2);
-    Serial.print(" ml/min");
-
-    Serial.print(" | Temp 1: ");
-    Serial.print(SLF3X_I2C_ONE.getTemp(), 1);
-    Serial.print(" deg C  |  FREQ 1: ");
-    Serial.println(FREQ1);
-  } else {
-    Serial.print("Error in SLF3X_1.readSample(): ");
-    Serial.println();
-    COUNT1++;
-    if (COUNT1 > 9) {
-      ESP.restart();
+    if (SLF3X_I2C_ONE.isAirInLineDetected()) {
+      no_air_in_line_1 = false;
+      FREQ1 = 2000;
+    } else {
+      no_air_in_line_1 = true;
     }
+
+    air_in_line_time = millis();
   }
 
-  delay(MEASURE_DELAY); // delay between reads
+  // Set PWM outputs
+  ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_0, FREQ0);
+  ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_1, FREQ1);
+
+  Serial.print(FREQ0);
+  Serial.print(",");
+  Serial.println(FREQ1);
+
+  /*
+    int I2C_RET0 = SLF3X_I2C_ZERO.readSample();
+    if (I2C_RET0 == 0) {
+      COUNT0 = 0;
+
+      FREQ0 = round(10000/60 * SLF3X_I2C_ZERO.getFlow());
+
+      if (FREQ0 < 5) {
+        FREQ0 = 5;
+        Serial.print("FLOW0 LOW");
+      }
+
+      if (!DEBUG) {
+        if (SLF3X_I2C_ZERO.isAirInLineDetected()){
+          FREQ0 = 2000;
+          Serial.print(" [ ERROR : AIR IN LINE 0 ] ");
+        }
+        if (SLF3X_I2C_ZERO.isHighFlowDetected()) {
+          FREQ0 = 10000;
+          Serial.print(" [ ERROR : HIGH FLOW IN LINE 0 ] ");
+        }
+      }
+
+
+      //ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_0, FREQ0);
+
+
+      Serial.print("Flow 0: ");
+      Serial.print(SLF3X_I2C_ZERO.getFlow(), 2);
+      Serial.print(" ml/min");
+
+      Serial.print(" | Temp 0: ");
+      Serial.print(SLF3X_I2C_ZERO.getTemp(), 1);
+      Serial.print(" deg C  |  FREQ0: ");
+      Serial.print(FREQ0);
+    } else {
+      Serial.print("Error in SLF3X_0.readSample(): ");
+      COUNT0++;
+      if (COUNT0 > 9) {
+        ESP.restart();
+      }
+    }
+
+    int I2C_RET1 = SLF3X_I2C_ONE.readSample();
+    if (I2C_RET1 == 0) {
+      COUNT1 = 0;
+
+      FREQ1 = round(10000/60 * SLF3X_I2C_ONE.getFlow());
+
+      if (FREQ1 < 5) {
+        FREQ1 = 5;
+        Serial.print("FLOW1 LOW");
+      }
+
+      if (!DEBUG) {
+        if (SLF3X_I2C_ONE.isAirInLineDetected()){
+          FREQ1 = 2000;
+          Serial.print(" [ ERROR : AIR IN LINE 1 ] ");
+        }
+        if (SLF3X_I2C_ONE.isHighFlowDetected()) {
+          FREQ1 = 10000;
+          Serial.print(" [ ERROR : HIGH FLOW IN LINE 1 ] ");
+        }
+      }
+
+      //ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_1, FREQ1);
+
+      Serial.print("   Flow 1: ");
+      Serial.print(SLF3X_I2C_ONE.getFlow(), 2);
+      Serial.print(" ml/min");
+
+      Serial.print(" | Temp 1: ");
+      Serial.print(SLF3X_I2C_ONE.getTemp(), 1);
+      Serial.print(" deg C  |  FREQ 1: ");
+      Serial.println(FREQ1);
+    } else {
+      Serial.print("Error in SLF3X_1.readSample(): ");
+      Serial.println();
+      COUNT1++;
+      if (COUNT1 > 9) {
+        ESP.restart();
+      }
+    }
+
+    delay(MEASURE_DELAY); // delay between reads */
 }
