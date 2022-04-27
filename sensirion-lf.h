@@ -50,6 +50,7 @@ public:
 
   int8_t init();
   int8_t readSample();
+  int8_t softReset();
 
   float getFlow() const { return mFlow; }
   float getTemp() const { return mTemp; }
