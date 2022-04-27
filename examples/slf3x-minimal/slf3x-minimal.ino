@@ -127,7 +127,7 @@ void loop()
     READ1 = SLF3X_I2C_ONE.readSample();   
     
     if (!READ0 && no_air_in_line_0) {
-      FREQ0 = round(10000 / 60 * SLF3X_I2C_ZERO.getFlow());
+      FREQ0 = round(1000 / 60 * SLF3X_I2C_ZERO.getFlow());
       if (SLF3X_I2C_ZERO.isHighFlowDetected()) FREQ0 = 10000;
     }
     
