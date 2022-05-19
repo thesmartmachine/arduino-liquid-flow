@@ -40,13 +40,16 @@
 class SensirionLF
 {
 public:
-  SensirionLF(
-    float flowScaleFactor,
-    float tempScaleFactor,
+  SensirionLF(float flowScaleFactor, 
+    float tempScaleFactor, 
     uint8_t i2cAddress,
-    uint8_t i2cBusIndex,
-    uint8_t clockPin,
-    uint8_t dataPin);
+    int i2cSCL,
+    int i2cSDA,
+    int i2cIndex);
+
+  static constexpr float   SLF3X_SCALE_FACTOR_FLOW = 500.0;
+  static constexpr float   SLF3X_SCALE_FACTOR_TEMP = 200.0;
+  static constexpr uint8_t SLF3X_I2C_ADDRESS = 0x08;
 
   int8_t init();
   int8_t readSample();
@@ -57,10 +60,6 @@ public:
 
   bool isAirInLineDetected() const { return mAirInLineDetected; }
   bool isHighFlowDetected()  const { return mHighFlowDetected;  }
-
-  static constexpr float SLF3X_SCALE_FACTOR_FLOW = 500.0;
-  static constexpr float SLF3X_SCALE_FACTOR_TEMP = 200.0;
-  static constexpr uint8_t SLF3X_I2C_ADDRESS = 0x08;
 
 private:
   uint8_t crc8(const uint8_t* data, uint8_t len);
@@ -77,9 +76,11 @@ private:
   float   mFlowScaleFactor;
   float   mTempScaleFactor;
   uint8_t mI2cAddress;
-  TwoWire mI2c;
-  uint8_t mClockPin;
-  uint8_t mDataPin;
+
+  TwoWire   mI2c;
+  
+  int mI2cSCL;
+  int mI2cSDA;
 
   float   mFlow;
   float   mTemp;
@@ -87,6 +88,8 @@ private:
   bool mAirInLineDetected;
   bool mHighFlowDetected;
 };
+
+extern SensirionLF SLF3X;
 
 // TODO: verify with LD20 hardware
 // extern SensirionLF LD20;
