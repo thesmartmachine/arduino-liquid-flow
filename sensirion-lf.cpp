@@ -35,7 +35,12 @@
 // Adapted from https://github.com/Sensirion/arduino-liquid-flow-snippets/blob/master/example_00_measurement_LD20/example_00_measurement_LD20.ino
 
 #include <Arduino.h>
+#include <Wire.h>
 #include "sensirion-lf.h"
+
+static const float   SLF3X_SCALE_FACTOR_FLOW = 500.0;
+static const float   SLF3X_SCALE_FACTOR_TEMP = 200.0;
+static const uint8_t SLF3X_I2C_ADDRESS = 0x08;
 
 // TODO: verify on LD20 hardware
 // static const float   LD20_SCALE_FACTOR_FLOW = 1200.0;
@@ -51,7 +56,7 @@ static const uint8_t  CMD_SOFT_RESET_LENGTH = 1;
 static const uint8_t  CMD_SOFT_RESET[CMD_SOFT_RESET_LENGTH] = { 0x06 };
 static const uint8_t  SOFT_RESET_MAX_TRIES = 10;
 
-static const uint8_t  CHIP_RESET_DELAY = 100;
+static const uint8_t  CHIP_RESET_DELAY = 200;
 static const uint16_t CHIP_RESET_RETRY_DELAY = 500;
 
 static const uint8_t  INITIAL_MEASURE_DELAY = 120; // LD20: 120ms; SLF3X: 50ms
@@ -59,15 +64,15 @@ static const uint8_t  INITIAL_MEASURE_DELAY = 120; // LD20: 120ms; SLF3X: 50ms
 SensirionLF::SensirionLF(float flowScaleFactor,
                          float tempScaleFactor,
                          uint8_t i2cAddress,
-                         uint8_t i2cBusIndex,
-                         uint8_t clockPin,
-                         uint8_t dataPin)
+                         int i2cSDA,
+                         int i2cSCL,
+                         int i2cIndex)
     : mFlowScaleFactor(flowScaleFactor),
       mTempScaleFactor(tempScaleFactor),
       mI2cAddress(i2cAddress),
-      mI2c(i2cBusIndex),
-      mClockPin(clockPin),
-      mDataPin(dataPin),
+      mI2c(i2cIndex),
+      mI2cSDA(i2cSDA),
+      mI2cSCL(i2cSCL),
       mAirInLineDetected(false),
       mHighFlowDetected(false)
 {
@@ -75,8 +80,8 @@ SensirionLF::SensirionLF(float flowScaleFactor,
 
 int8_t SensirionLF::init()
 {
-  mI2c.begin(mDataPin, mClockPin);
-  
+    mI2c.begin(mI2cSDA, mI2cSCL);
+
   if (trigger_soft_reset() != 0) {
     return 1;
   }
@@ -100,7 +105,6 @@ int8_t SensirionLF::readSample()
   return 0;
 }
 
-
 int8_t SensirionLF::softReset()
 {
   uint8_t count = 0;
@@ -112,11 +116,11 @@ int8_t SensirionLF::softReset()
       return 1;
     }
   }
-
   delay(CHIP_RESET_DELAY); // wait long enough for chip reset to complete
+  start_measurement();
+  delay(100);
   return 0;
 }
-
 
 int8_t SensirionLF::validate_crc(uint8_t* data, uint8_t word_count)
 {
